@@ -107,7 +107,7 @@ async def load_and_start_strategy(hb: HummingbotApplication,
 
     elif config_file_name is not None:
         # Regular strategy with YAML config (V1 flow)
-        hb.strategy_file_name = config_file_name.split(".")[0]  # Remove .yml extension
+        hb.strategy_file_name = config_file_name  # Keep full filename (e.g. conf_orderly_perp_mm.yml)
 
         try:
             strategy_config = await load_strategy_config_map_from_file(
