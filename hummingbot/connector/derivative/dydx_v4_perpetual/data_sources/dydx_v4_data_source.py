@@ -49,14 +49,12 @@ class DydxPerpetualV4Client:
         )
 
         host_and_port = CONSTANTS.DYDX_V4_AERIAL_CONFIG_URL
-        grpc_client = (
-            grpc.aio.secure_channel(host_and_port, credentials)
-            if credentials is not None else grpc.aio.insecure_channel(host_and_port)
-        )
-        query_grpc_client = (
-            grpc.aio.secure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL, credentials)
-            if credentials is not None else grpc.aio.insecure_channel(host_and_port)
-        )
+        if CONSTANTS.DYDX_V4_GRPC_INSECURE:
+            grpc_client = grpc.aio.insecure_channel(host_and_port)
+            query_grpc_client = grpc.aio.insecure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL)
+        else:
+            grpc_client = grpc.aio.secure_channel(host_and_port, credentials)
+            query_grpc_client = grpc.aio.secure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL, credentials)
         self.stubBank = bank_query_grpc.QueryStub(grpc_client)
         self.auth_client = AuthGrpcClient(query_grpc_client)
         self.txs = TxGrpcClient(grpc_client)
