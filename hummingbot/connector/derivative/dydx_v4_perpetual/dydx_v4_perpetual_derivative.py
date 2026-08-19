@@ -781,7 +781,15 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
         # account = await self._get_account()
         await self._process_open_positions(response["subaccount"]["openPerpetualPositions"])
 
+    async def _fetch_account_position_mode(self) -> Optional[PositionMode]:
+        """
+        dYdX v4 only supports ONEWAY position mode.
+        Returning it directly avoids repeated set attempts caused by the base class default None.
+        """
+        return PositionMode.ONEWAY
+
     async def _trading_pair_position_mode_set(self, mode: PositionMode, trading_pair: str) -> Tuple[bool, str]:
+
         """
         :return: A tuple of boolean (true if success) and error message if the exchange returns one on failure.
         """
