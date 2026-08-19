@@ -24,8 +24,8 @@ MAX_ID_BIT_COUNT = 31
 
 # data_source grpc
 DYDX_V4_AERIAL_GRPC_OR_REST_PREFIX = "grpc"
-DYDX_V4_AERIAL_CONFIG_URL = '127.0.0.1:9091'
-DYDX_V4_QUERY_AERIAL_CONFIG_URL = '127.0.0.1:9091'
+DYDX_V4_AERIAL_CONFIG_URL = '127.0.0.1:9090'
+DYDX_V4_QUERY_AERIAL_CONFIG_URL = '127.0.0.1:9090'
 # Set to True for local/plaintext gRPC endpoints (no TLS), False for mainnet (TLS)
 DYDX_V4_GRPC_INSECURE = True
 CHAIN_ID = 'localdydxprotocol'
