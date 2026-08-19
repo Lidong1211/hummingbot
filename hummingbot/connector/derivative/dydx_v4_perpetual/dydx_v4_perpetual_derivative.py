@@ -797,6 +797,7 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 f"{mode} for {trading_pair}"
                 f" (dydx_v4 only supports the ONEWAY position mode)"
             )
+            return False, "dydx_v4 only supports the ONEWAY position mode."
         else:
             self._position_mode = PositionMode.ONEWAY
             super().set_position_mode(PositionMode.ONEWAY)
@@ -805,6 +806,7 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 PositionModeChangeEvent(self.current_timestamp, trading_pair, mode),
             )
             self.logger().debug(f"dydx_v4 switching position mode to " f"{mode} for {trading_pair} succeeded.")
+            return True, ""
 
     async def _set_trading_pair_leverage(self, trading_pair: str, leverage: int) -> Tuple[bool, str]:
         success = True
