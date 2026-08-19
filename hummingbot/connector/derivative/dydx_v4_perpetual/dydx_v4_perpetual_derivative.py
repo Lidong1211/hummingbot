@@ -162,9 +162,10 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 resp = await self._tx_client.cancel_order(
                     client_id=int(tracked_order.client_order_id),
                     clob_pair_id=self._margin_fractions[tracked_order.trading_pair]["clob_pair_id"],
-                    order_flags=CONSTANTS.ORDER_FLAGS_LONG_TERM,
-                    good_til_block_time=int(time.time()) + CONSTANTS.ORDER_EXPIRATION
+                    order_flags=CONSTANTS.ORDER_FLAGS_SHORT_TERM,
+                    good_til_block_time=0
                 )
+
                 if CONSTANTS.ACCOUNT_SEQUENCE_MISMATCH_ERROR in resp['raw_log']:
                     self.logger().warning(
                         f"Failed to cancel order {tracked_order.client_order_id} (retry {i + 1}), {resp['raw_log']}")
