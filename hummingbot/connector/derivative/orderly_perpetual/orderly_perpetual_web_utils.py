@@ -218,43 +218,13 @@ async def get_current_server_time(throttler: AsyncThrottler, domain: str) -> flo
 
 
 def is_exchange_information_valid(exchange_info: Dict[str, Any]) -> bool:
-    """
-    Validate if trading pair information is valid.
-
-    Checks if a trading pair is enabled and has necessary information.
-
-    Args:
-        exchange_info: Trading pair information from exchange
-
-    Returns:
-        True if the trading pair is valid and enabled
-
-    Example trading pair info from Orderly:
-    {
-        "symbol": "PERP_BTC_USDC",
-        "base_tick": "0.01",
-        "base_min": "0.01",
-        "base_max": "1000",
-        "quote_tick": "0.1",
-        "quote_min": "10",
-        "quote_max": "1000000",
-        "min_notional": "10",
-        "price_range": "0.1",
-        "price_scope": "0.05"
-    }
-    """
-    # Check if required fields exist
-    required_fields = ["symbol", "base_tick", "quote_tick", "base_min", "quote_min"]
-
-    for field in required_fields:
-        if field not in exchange_info:
-            return False
-
-    # Check if symbol is active (Orderly may have a status field)
+    if not isinstance(exchange_info, dict) or "symbol" not in exchange_info:
+        return False
+    # Only reject if status is explicitly inactive/suspended
     if "status" in exchange_info:
-        return exchange_info["status"].upper() in ["ACTIVE", "TRADING"]
-
-    # If no status field, assume active if required fields are present
+        status_val = str(exchange_info["status"]).upper()
+        if status_val in ["INACTIVE", "SUSPENDED", "DELISTED", "CLOSE", "CLOSED"]:
+            return False
     return True
 
 
@@ -284,7 +254,8 @@ def format_trading_pair(orderly_symbol: str) -> str:
     if len(parts) < 2:
         return orderly_symbol  # Return as-is if unexpected format
 
-    base, quote = parts[0], parts[1]
+    base = parts[0]
+    quote = "_".join(parts[1:])
     return f"{base}-{quote}"
 
 

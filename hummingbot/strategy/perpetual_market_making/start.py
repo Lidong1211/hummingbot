@@ -47,10 +47,27 @@ async def start(self):
         order_override = c_map.get("order_override").value
 
         trading_pair: str = raw_trading_pair
+        broker_suffix = None
+        if "_" in raw_trading_pair:
+            parts = raw_trading_pair.split("-")
+            if len(parts) == 2:
+                base, quote = parts[0], parts[1]
+                if "_" in quote:
+                    broker_suffix = "_".join(quote.split("_")[1:])
+                    quote = quote.split("_")[0]
+                trading_pair = f"{base}-{quote}"
+
         base, quote = trading_pair.split("-")
         maker_assets: Tuple[str, str] = (base, quote)
         market_names: List[Tuple[str, List[str]]] = [(exchange, [trading_pair])]
         await self.initialize_markets(market_names)
+
+        if broker_suffix:
+            if exchange in self.connectors:
+                self.connectors[exchange].broker_suffix = broker_suffix
+            if exchange in self.markets:
+                self.markets[exchange].broker_suffix = broker_suffix
+
         maker_data = [self.markets[exchange], trading_pair] + list(maker_assets)
         self.market_trading_pair_tuples = [MarketTradingPairTuple(*maker_data)]
         asset_price_delegate = None
@@ -60,6 +77,7 @@ async def start(self):
                 price_source_exchange, [asset_trading_pair]
             )
             self.markets[price_source_exchange]: ExchangeBase = ext_market
+            self.connector_manager.connectors[price_source_exchange]: ExchangeBase = ext_market
             asset_price_delegate = OrderBookAssetPriceDelegate(ext_market, asset_trading_pair)
         elif price_source == "custom_api":
             ext_market = create_paper_trade_market(

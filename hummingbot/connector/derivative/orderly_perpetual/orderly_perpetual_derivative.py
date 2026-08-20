@@ -263,6 +263,14 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
                 # Convert to Hummingbot format
                 trading_pair = web_utils.format_trading_pair(exchange_symbol)
 
+                # Map custom test pair to clean Hummingbot pair if broker_suffix matches
+                broker_suffix = getattr(self, "broker_suffix", None)
+                if broker_suffix and exchange_symbol.endswith(f"_{broker_suffix}"):
+                    trading_pair = trading_pair.replace(f"_{broker_suffix}", "")
+                    if trading_pair in mapping.inverse:
+                        old_symbol = mapping.inverse[trading_pair]
+                        del mapping[old_symbol]
+
                 # Orderly uses unique symbols (PERP_BTC_USDC), no duplicates expected
                 if trading_pair not in mapping.inverse:
                     mapping[exchange_symbol] = trading_pair
@@ -408,6 +416,11 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
                 orderly_symbol = rule_data["symbol"]
                 # Format trading pair directly from symbol (don't use mapping since it's not initialized yet)
                 trading_pair = web_utils.format_trading_pair(orderly_symbol)
+
+                # Map custom test pair to clean Hummingbot pair if broker_suffix matches
+                broker_suffix = getattr(self, "broker_suffix", None)
+                if broker_suffix and orderly_symbol.endswith(f"_{broker_suffix}"):
+                    trading_pair = trading_pair.replace(f"_{broker_suffix}", "")
 
                 trading_rule = TradingRule(
                     trading_pair=trading_pair,
@@ -783,9 +796,7 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
         # Build order parameters according to Orderly API spec
         # Map Hummingbot order types to Orderly order types
         orderly_order_type = "MARKET"
-        if order_type == OrderType.LIMIT:
-            orderly_order_type = "LIMIT"
-        elif order_type == OrderType.LIMIT_MAKER:
+        if order_type in [OrderType.LIMIT, OrderType.LIMIT_MAKER]:
             orderly_order_type = "POST_ONLY"
 
         order_params = {
@@ -795,6 +806,7 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
             "order_type": orderly_order_type,
             "order_quantity": float(self.quantize_order_amount(trading_pair, amount)),
             "reduce_only": position_action == PositionAction.CLOSE,
+            "margin_mode": "ISOLATED",
         }
 
         # Add price for non-MARKET orders
@@ -872,6 +884,21 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
 
         if not response.get("success", False):
             raise IOError(f"Order cancellation failed: {response}")
+
+        # Schedule a background polling fallback to check cancellation status in 2 seconds
+        asyncio.ensure_future(self._check_cancelled_order_after_delay(order_id, 2.0))
+
+    async def _check_cancelled_order_after_delay(self, order_id: str, delay_seconds: float):
+        await asyncio.sleep(delay_seconds)
+        if order_id in self.in_flight_orders:
+            tracked_order = self.in_flight_orders[order_id]
+            try:
+                order_update = await self._request_order_status(tracked_order)
+                if order_update:
+                    self.logger().info(f"[CANCEL COMPENSATION] Polled status for order {order_id} (state: {order_update.new_state})")
+                    self._order_tracker.process_order_update(order_update)
+            except Exception as e:
+                self.logger().warning(f"Error checking cancelled order status for {order_id}: {e}")
 
     async def batch_order_create(
         self,
@@ -1551,7 +1578,11 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
         for position_data in positions_data:
             try:
                 symbol = position_data["symbol"]
-                trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol)
+                try:
+                    trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol)
+                except KeyError:
+                    # Ignore positions for unconfigured symbols
+                    continue
 
                 position_qty = Decimal(str(position_data.get("position_qty", "0")))
 
