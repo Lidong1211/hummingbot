@@ -29,6 +29,10 @@ from hummingbot.core.utils.async_utils import safe_gather
 class CmdlineParser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
+        self.add_argument("--config-dir",
+                          type=str,
+                          required=False,
+                          help="Specify a custom directory (e.g. conf_dydx_ddt_taker) to load connectors / strategies / scripts from.")
         self.add_argument("--config-file-name", "-f",
                           type=str,
                           required=False,
@@ -63,9 +67,10 @@ async def quick_start(args: argparse.Namespace, secrets_manager: BaseSecretsMana
         autofix_permissions(args.auto_set_permissions)
 
     # Shared boot (login, yml, basic logging, system configs, paper-trade, build app). Logging is
-    # re-initialized later in run_application with the strategy file name. MQTT autostarts only headless.
+    # re-initialized later in run_application with the strategy file name.
+    mqtt_start = client_config_map.mqtt_bridge.mqtt_autostart if hasattr(client_config_map, 'mqtt_bridge') else False
     hb = await bootstrap_application(client_config_map, secrets_manager,
-                                     headless=args.headless, mqtt_autostart=args.headless)
+                                     headless=args.headless, mqtt_autostart=mqtt_start)
     if hb is None:
         return
 
@@ -116,6 +121,11 @@ async def run_application(hb: HummingbotApplication, args: argparse.Namespace, c
 
 def main():
     args = CmdlineParser().parse_args()
+
+    # If a custom config-dir is specified, override the connectors / strategies / scripts paths
+    if args.config_dir:
+        from hummingbot.client.settings import set_custom_conf_dir
+        set_custom_conf_dir(args.config_dir)
 
     # Parse environment variables from Dockerfile.
     # If an environment variable is not empty and it's not defined in the arguments, then we'll use the environment

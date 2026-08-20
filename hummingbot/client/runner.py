@@ -79,7 +79,8 @@ async def load_and_start_strategy(hb: HummingbotApplication,
     """
     if v2_conf:
         # V2 config-driven start: derive script from config file
-        conf_path = SCRIPT_STRATEGY_CONF_DIR_PATH / v2_conf
+        from hummingbot.client import settings as hb_settings
+        conf_path = hb_settings.SCRIPT_STRATEGY_CONF_DIR_PATH / v2_conf
         if not conf_path.exists():
             logging.getLogger().error(f"V2 config file not found: {conf_path}")
             return False
@@ -109,13 +110,14 @@ async def load_and_start_strategy(hb: HummingbotApplication,
         # Regular strategy with YAML config (V1 flow)
         hb.strategy_file_name = config_file_name.split(".")[0]  # Remove .yml extension
 
+        from hummingbot.client import settings as hb_settings
         try:
             strategy_config = await load_strategy_config_map_from_file(
-                STRATEGIES_CONF_DIR_PATH / config_file_name
+                hb_settings.STRATEGIES_CONF_DIR_PATH / config_file_name
             )
         except FileNotFoundError:
             logging.getLogger().error(
-                f"Strategy config file not found: {STRATEGIES_CONF_DIR_PATH / config_file_name}")
+                f"Strategy config file not found: {hb_settings.STRATEGIES_CONF_DIR_PATH / config_file_name}")
             return False
         except Exception as e:
             logging.getLogger().error(f"Error loading strategy config file: {e}")

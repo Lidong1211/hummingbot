@@ -662,6 +662,8 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 )
 
             if updated_order_data is None:
+                if tracked_order is None:
+                    return None
                 # If the order is not found in the response, return an OrderUpdate with the same status as before
                 return OrderUpdate(
                     client_order_id=tracked_order.client_order_id,
