@@ -1,4 +1,4 @@
-name: hummingbot
+name: hummingbot_orderly
 channels:
   - conda-forge
   - defaults
