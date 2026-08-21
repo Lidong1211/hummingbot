@@ -796,9 +796,7 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
         # Build order parameters according to Orderly API spec
         # Map Hummingbot order types to Orderly order types
         orderly_order_type = "MARKET"
-        if order_type == OrderType.LIMIT:
-            orderly_order_type = "LIMIT"
-        elif order_type == OrderType.LIMIT_MAKER:
+        if order_type in [OrderType.LIMIT, OrderType.LIMIT_MAKER]:
             orderly_order_type = "POST_ONLY"
 
         order_params = {
@@ -808,6 +806,7 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
             "order_type": orderly_order_type,
             "order_quantity": float(self.quantize_order_amount(trading_pair, amount)),
             "reduce_only": position_action == PositionAction.CLOSE,
+            "margin_mode": "ISOLATED",
         }
 
         # Add price for non-MARKET orders
