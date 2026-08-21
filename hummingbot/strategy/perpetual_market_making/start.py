@@ -60,6 +60,7 @@ async def start(self):
                 price_source_exchange, [asset_trading_pair]
             )
             self.markets[price_source_exchange]: ExchangeBase = ext_market
+            self.connector_manager.connectors[price_source_exchange]: ExchangeBase = ext_market
             asset_price_delegate = OrderBookAssetPriceDelegate(ext_market, asset_trading_pair)
         elif price_source == "custom_api":
             ext_market = create_paper_trade_market(
