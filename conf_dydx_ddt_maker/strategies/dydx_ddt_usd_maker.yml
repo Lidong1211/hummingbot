@@ -1,0 +1,63 @@
+########################################################
+###       Perpetual market making strategy config         ###
+########################################################
+
+template_version: 6
+strategy: perpetual_market_making
+
+# 交易连接器与币对配置
+derivative: dydx_v4_perpetual
+market: DDT-USD
+
+# 杠杆与仓位模式
+leverage: 5
+position_mode: One-way
+
+# 挂单间距百分比 (第一档买/卖单距离盘口的百分比)
+bid_spread: 0.3
+ask_spread: 0.3
+
+# 多档网格铺单设置 (此处配置双边各 5 档订单，总共会挂 10 个订单)
+order_levels: 8
+# 后续档位的差值百分比 (例如第一档 0.3%，第二档为 0.3 + 0.3 = 0.6%，第三档 0.9%)
+order_level_spread: 0.7
+# 后续档位的下单量变化 (0 表示每档数量相同；若为正数则递增，负数则递减)
+order_level_amount: 0.5
+
+# 基础下单量 (0.006 ETH，请确保在杠杆作用下且满足最小下单额)
+order_amount: 2
+
+# 挂单刷新与重置时间 (秒)
+order_refresh_time: 18.0
+
+order_refresh_tolerance_pct: 0  # 价格变动小于 0.1% 时不撤销旧单，继续保持挂单
+
+# 单次订单被完全吃掉后，重新挂单的延迟等待时间 (秒)
+filled_order_delay: 1.0
+
+# 是否开启仓位止盈止损 (0.0 表示禁用)
+# 当有多头或空头仓位时，挂单会自动进行仓位保护
+stop_loss_spread: 0.0001                 # 亏损达到 2.0% 时执行止损
+stop_loss_slippage_buffer: 5.0        # 止损挂单的滑点容忍百分比
+time_between_stop_loss_orders: 2.0    # 止损单失败后重试间隔
+long_profit_taking_spread: 0.0      # 多单利润达 1.5% 时主动止盈平仓
+short_profit_taking_spread: 0.0        # 空单利润达 1.5% 时主动止盈平仓
+
+# 做市价格保护区间 (-1.0 表示禁用)
+price_ceiling: -1.0
+price_floor: -1.0
+
+# 是否开启最佳价跃过优化 (建议关闭，由机器人维护基础网格即可)
+order_optimization_enabled: false
+bid_order_optimization_depth: 0.0
+ask_order_optimization_depth: 0.0
+
+# 价格定价来源 (默认使用当前订单簿中值价)
+price_source: current_market
+price_type: mid_price
+minimum_spread: -100.0
+price_source_derivative:
+price_source_market:
+price_source_custom_api:
+custom_api_update_interval: 5.0
+order_override:
