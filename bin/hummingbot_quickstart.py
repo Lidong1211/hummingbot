@@ -67,9 +67,10 @@ async def quick_start(args: argparse.Namespace, secrets_manager: BaseSecretsMana
         autofix_permissions(args.auto_set_permissions)
 
     # Shared boot (login, yml, basic logging, system configs, paper-trade, build app). Logging is
-    # re-initialized later in run_application with the strategy file name. MQTT autostarts only headless.
+    # re-initialized later in run_application with the strategy file name.
+    mqtt_start = client_config_map.mqtt_bridge.mqtt_autostart if hasattr(client_config_map, 'mqtt_bridge') else False
     hb = await bootstrap_application(client_config_map, secrets_manager,
-                                     headless=args.headless, mqtt_autostart=args.headless)
+                                     headless=args.headless, mqtt_autostart=mqtt_start)
     if hb is None:
         return
 
