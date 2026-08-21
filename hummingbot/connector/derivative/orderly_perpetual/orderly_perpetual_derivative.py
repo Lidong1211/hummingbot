@@ -263,6 +263,14 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
                 # Convert to Hummingbot format
                 trading_pair = web_utils.format_trading_pair(exchange_symbol)
 
+                # Map custom test pair to clean Hummingbot pair if broker_suffix matches
+                broker_suffix = getattr(self, "broker_suffix", None)
+                if broker_suffix and exchange_symbol.endswith(f"_{broker_suffix}"):
+                    trading_pair = trading_pair.replace(f"_{broker_suffix}", "")
+                    if trading_pair in mapping.inverse:
+                        old_symbol = mapping.inverse[trading_pair]
+                        del mapping[old_symbol]
+
                 # Orderly uses unique symbols (PERP_BTC_USDC), no duplicates expected
                 if trading_pair not in mapping.inverse:
                     mapping[exchange_symbol] = trading_pair
@@ -408,6 +416,11 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
                 orderly_symbol = rule_data["symbol"]
                 # Format trading pair directly from symbol (don't use mapping since it's not initialized yet)
                 trading_pair = web_utils.format_trading_pair(orderly_symbol)
+
+                # Map custom test pair to clean Hummingbot pair if broker_suffix matches
+                broker_suffix = getattr(self, "broker_suffix", None)
+                if broker_suffix and orderly_symbol.endswith(f"_{broker_suffix}"):
+                    trading_pair = trading_pair.replace(f"_{broker_suffix}", "")
 
                 trading_rule = TradingRule(
                     trading_pair=trading_pair,
@@ -1566,7 +1579,11 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
         for position_data in positions_data:
             try:
                 symbol = position_data["symbol"]
-                trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol)
+                try:
+                    trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol)
+                except KeyError:
+                    # Ignore positions for unconfigured symbols
+                    continue
 
                 position_qty = Decimal(str(position_data.get("position_qty", "0")))
 
