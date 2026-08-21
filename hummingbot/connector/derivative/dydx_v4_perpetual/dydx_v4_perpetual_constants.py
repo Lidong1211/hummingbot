@@ -24,20 +24,22 @@ MAX_ID_BIT_COUNT = 31
 
 # data_source grpc
 DYDX_V4_AERIAL_GRPC_OR_REST_PREFIX = "grpc"
-DYDX_V4_AERIAL_CONFIG_URL = 'dydx-grpc.publicnode.com:443'
-DYDX_V4_QUERY_AERIAL_CONFIG_URL = 'dydx-grpc.publicnode.com:443'
-CHAIN_ID = 'dydx-mainnet-1'
+DYDX_V4_AERIAL_CONFIG_URL = '127.0.0.1:9090'
+DYDX_V4_QUERY_AERIAL_CONFIG_URL = '127.0.0.1:9090'
+# Set to True for local/plaintext gRPC endpoints (no TLS), False for mainnet (TLS)
+DYDX_V4_GRPC_INSECURE = True
+CHAIN_ID = 'localdydxprotocol'
 FEE_DENOMINATION = "afet"
 TX_FEE = 0
 TX_GAS_LIMIT = 0
 
-DYDX_V4_VALIDATOR_REST_BASE_URL = "https://dydx-grpc.publicnode.com:443"
+DYDX_V4_VALIDATOR_REST_BASE_URL = "http://127.0.0.1:1317"
 
-DYDX_V4_INDEXER_REST_BASE_URL = "https://indexer.dydx.trade"
+DYDX_V4_INDEXER_REST_BASE_URL = "http://127.0.0.1:3002"
 
 DYDX_V4_REST_URL = "{}/{}".format(DYDX_V4_INDEXER_REST_BASE_URL, API_VERSION)
 
-DYDX_V4_WS_URL = "wss://indexer.dydx.trade/{}/ws".format(API_VERSION)
+DYDX_V4_WS_URL = "ws://127.0.0.1:3003/{}/ws".format(API_VERSION)
 
 # Public REST Endpoints
 
