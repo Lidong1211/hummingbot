@@ -1,10 +1,11 @@
-name: hummingbot
+name: hummingbot_dydx
 channels:
   - conda-forge
   - defaults
 dependencies:
   ### Packages needed for the build/install process
   - autopep8
+  - backports>=1.0
   - conda-build>=3.26.0
   - coverage>=7.2.7
   - cython
@@ -16,9 +17,10 @@ dependencies:
   - pytest>=7.4.0
   - pytest-asyncio>=0.16.0
   - pytest-timeout>=2.1.0
-  - setuptools==80.8.0
+  - setuptools>=75.7.0
   ### Packages used within HB and helping reduce the footprint of pip-installed packages
   - aiohttp>=3.8.5,<3.14  # aiohttp 3.14 requires a stream_writer arg that aioresponses 0.7.8 doesn't pass, breaking HTTP-mocked tests
+  - aiomqtt>=2.0.0
   - asyncssh>=2.13.2
   - aioprocessing>=2.0.1
   - aioresponses>=0.7.4
@@ -26,18 +28,17 @@ dependencies:
   - async-timeout>=4.0.2,<5
   - bidict>=0.22.1
   - bip-utils
-  - brotli-python>=1.2.0  # aiohttp>=3.13.3 calls Decompressor.process(data, max_length); Brotli<1.2.0 takes only one arg
   - cachetools>=5.3.1
   - cryptography>=41.0.2
-  - eth-account>=0.13.0
-#  - injective-py==1.12.*
-  - libta-lib>=0.6.4
+  - dydxprotocol-v4-proto-py
+  - eth-account >=0.13.0
+  - gql-with-aiohttp>=3.4.1
   - msgpack-python
-  - numba>=0.61.2
-  - numpy>=2.2.6
+  - numba>=0.60.0
+  - numpy>=2.1.0
   - objgraph
-  - pandas>=2.3.2
-  - pandas-ta>=0.4.71b
+  - pandas>=2.2.3
+  - pandas-ta>=0.4.26b
   - prompt_toolkit>=3.0.39
   - protobuf>=4.23.3
   - psutil>=5.9.5
@@ -52,12 +53,9 @@ dependencies:
   - scalecodec
   - scipy>=1.11.1
   - six>=1.16.0
-  - base58>=2.1.1
   - sqlalchemy>=1.4.49
-  - ta-lib>=0.6.4
   - tabulate==0.9.0
   - tqdm>=4.67.1
-  - typer>=0.9.0
   - ujson>=5.7.0
   # This needs to be restricted to <2.0 - tests fail otherwise
   - urllib3>=1.26.15,<2.0
@@ -65,10 +63,3 @@ dependencies:
   - xrpl-py==4.4.0
   - yaml>=0.2.5
   - zlib>=1.2.13
-  - pip:
-    - aiomqtt>=2.0.0
-    - injective-py==1.14.*
-    - decibel-python-sdk==0.2.1
-    - aptos-sdk>=0.8.0
-    - solders>=0.19.0
-    - lighter-sdk==1.0.8

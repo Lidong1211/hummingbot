@@ -7,6 +7,8 @@ ifeq ($(DYDX),1)
   ENV_FILE := setup/environment_dydx.yml
 endif
 
+CONDA_ENV_NAME := $(shell grep "^name:" $(ENV_FILE) | awk '{print $$2}')
+
 test:
 	coverage run -m pytest \
  	--ignore="test/mock" \
@@ -33,7 +35,7 @@ build:
 
 
 uninstall:
-	conda env remove -n hummingbot -y
+	conda env remove -n $(CONDA_ENV_NAME) -y
 
 install:
 	@if ! command -v conda >/dev/null 2>&1; then \
@@ -42,26 +44,27 @@ install:
 	fi
 	@mkdir -p logs
 	@echo "Using env file: $(ENV_FILE)"
-	@if conda env list | awk '{print $$1}' | grep -qx hummingbot; then \
-		conda env update -n hummingbot -f "$(ENV_FILE)"; \
+	@echo "Conda environment name: $(CONDA_ENV_NAME)"
+	@if conda env list | awk '{print $$1}' | grep -qx $(CONDA_ENV_NAME); then \
+		conda env update -n $(CONDA_ENV_NAME) -f "$(ENV_FILE)"; \
 	else \
-		conda env create -n hummingbot -f "$(ENV_FILE)"; \
+		conda env create -n $(CONDA_ENV_NAME) -f "$(ENV_FILE)"; \
 	fi
 	@if [ "$$(uname)" = "Darwin" ]; then \
-		conda install -n hummingbot -y appnope; \
+		conda install -n $(CONDA_ENV_NAME) -y appnope; \
 	fi
-	@conda run -n hummingbot conda develop .
-	@conda run -n hummingbot python -m pip install --no-deps -r setup/pip_packages.txt > logs/pip_install.log 2>&1
-	@conda run -n hummingbot pre-commit install
+	@conda run -n $(CONDA_ENV_NAME) conda develop .
+	@conda run -n $(CONDA_ENV_NAME) python -m pip install --no-deps -r setup/pip_packages.txt > logs/pip_install.log 2>&1
+	@conda run -n $(CONDA_ENV_NAME) pre-commit install
 	@if [ "$$(uname)" = "Linux" ] && command -v dpkg >/dev/null 2>&1; then \
 		if ! dpkg -s build-essential >/dev/null 2>&1; then \
 			echo "build-essential not found, installing..."; \
 			sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y build-essential; \
 		fi; \
 	fi
-	@conda run -n hummingbot --no-capture-output python setup.py build_ext --inplace
-	@conda run -n hummingbot bash -c 'ln -sf "$(CURDIR)/bin/hbot" "$$CONDA_PREFIX/bin/hbot"'
-	@echo "Done. Run: conda activate hummingbot && hbot --help"
+	@conda run -n $(CONDA_ENV_NAME) --no-capture-output python setup.py build_ext --inplace
+	@conda run -n $(CONDA_ENV_NAME) bash -c 'ln -sf "$(CURDIR)/bin/hbot" "$$CONDA_PREFIX/bin/hbot"'
+	@echo "Done. Run: conda activate $(CONDA_ENV_NAME) && hbot --help"
 
 link-cli:
 	@src="$(CURDIR)/bin/hbot-host"; dir="$${HBOT_BIN:-}"; \
@@ -81,7 +84,7 @@ link-cli:
 	echo "Now 'hbot <command>' dispatches to your source env or the docker container."
 
 run:
-	conda run -n hummingbot --no-capture-output ./bin/hummingbot_quickstart.py $(ARGS)
+	conda run -n $(CONDA_ENV_NAME) --no-capture-output ./bin/hummingbot_quickstart.py $(ARGS)
 
 setup:
 	@read -r -p "Include Gateway? [y/N] " ans; \

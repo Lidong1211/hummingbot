@@ -29,6 +29,10 @@ from hummingbot.core.utils.async_utils import safe_gather
 class CmdlineParser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
+        self.add_argument("--config-dir",
+                          type=str,
+                          required=False,
+                          help="Specify a custom directory (e.g. conf_custorm) to load connectors / strategies / scripts from.")
         self.add_argument("--config-file-name", "-f",
                           type=str,
                           required=False,
@@ -116,6 +120,11 @@ async def run_application(hb: HummingbotApplication, args: argparse.Namespace, c
 
 def main():
     args = CmdlineParser().parse_args()
+
+    # If a custom config-dir is specified, override the connectors / strategies / scripts paths
+    if args.config_dir:
+        from hummingbot.client.settings import set_custom_conf_dir
+        set_custom_conf_dir(args.config_dir)
 
     # Parse environment variables from Dockerfile.
     # If an environment variable is not empty and it's not defined in the arguments, then we'll use the environment

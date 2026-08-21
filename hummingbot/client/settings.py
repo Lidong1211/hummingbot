@@ -36,6 +36,47 @@ STRATEGIES_CONF_DIR_PATH = CONF_DIR_PATH / "strategies"
 CONNECTORS_CONF_DIR_PATH = CONF_DIR_PATH / "connectors"
 SCRIPT_STRATEGY_CONF_DIR_PATH = CONF_DIR_PATH / "scripts"
 CONTROLLERS_CONF_DIR_PATH = CONF_DIR_PATH / "controllers"
+
+
+def set_custom_conf_dir(custom_path_str: str):
+    """
+    Dynamically override configuration paths for connectors, strategies, and scripts,
+    allowing fallback to the default conf/ for missing global files.
+    """
+    global CONF_DIR_PATH, CLIENT_CONFIG_PATH, TRADE_FEES_CONFIG_PATH
+    global STRATEGIES_CONF_DIR_PATH, CONNECTORS_CONF_DIR_PATH
+    global SCRIPT_STRATEGY_CONF_DIR_PATH, CONTROLLERS_CONF_DIR_PATH
+
+    from pathlib import Path
+    custom_path = Path(custom_path_str)
+    if not custom_path.is_absolute():
+        custom_path = root_path() / custom_path
+
+    CONF_DIR_PATH = custom_path
+    if (custom_path / "conf_client.yml").exists():
+        CLIENT_CONFIG_PATH = custom_path / "conf_client.yml"
+    if (custom_path / "conf_fee_overrides.yml").exists():
+        TRADE_FEES_CONFIG_PATH = custom_path / "conf_fee_overrides.yml"
+    if (custom_path / "strategies").exists():
+        STRATEGIES_CONF_DIR_PATH = custom_path / "strategies"
+    if (custom_path / "connectors").exists():
+        CONNECTORS_CONF_DIR_PATH = custom_path / "connectors"
+    if (custom_path / "scripts").exists():
+        SCRIPT_STRATEGY_CONF_DIR_PATH = custom_path / "scripts"
+    if (custom_path / "controllers").exists():
+        CONTROLLERS_CONF_DIR_PATH = custom_path / "controllers"
+
+    import sys
+    for module_name, module in list(sys.modules.items()):
+        if module is not None and ("hummingbot" in module_name or module_name.startswith("bin")):
+            for var_name in [
+                "CONF_DIR_PATH", "CLIENT_CONFIG_PATH", "TRADE_FEES_CONFIG_PATH",
+                "STRATEGIES_CONF_DIR_PATH", "CONNECTORS_CONF_DIR_PATH",
+                "SCRIPT_STRATEGY_CONF_DIR_PATH", "CONTROLLERS_CONF_DIR_PATH"
+            ]:
+                if hasattr(module, var_name):
+                    setattr(module, var_name, globals()[var_name])
+
 CONF_PREFIX = "conf_"
 CONF_POSTFIX = "_strategy"
 SCRIPT_STRATEGIES_MODULE = "scripts"
