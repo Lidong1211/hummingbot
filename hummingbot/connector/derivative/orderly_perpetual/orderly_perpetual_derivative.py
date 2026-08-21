@@ -873,6 +873,21 @@ class OrderlyPerpetualDerivative(PerpetualDerivativePyBase):
         if not response.get("success", False):
             raise IOError(f"Order cancellation failed: {response}")
 
+        # Schedule a background polling fallback to check cancellation status in 2 seconds
+        asyncio.ensure_future(self._check_cancelled_order_after_delay(order_id, 2.0))
+
+    async def _check_cancelled_order_after_delay(self, order_id: str, delay_seconds: float):
+        await asyncio.sleep(delay_seconds)
+        if order_id in self.in_flight_orders:
+            tracked_order = self.in_flight_orders[order_id]
+            try:
+                order_update = await self._request_order_status(tracked_order)
+                if order_update:
+                    self.logger().info(f"[CANCEL COMPENSATION] Polled status for order {order_id} (state: {order_update.new_state})")
+                    self._order_tracker.process_order_update(order_update)
+            except Exception as e:
+                self.logger().warning(f"Error checking cancelled order status for {order_id}: {e}")
+
     async def batch_order_create(
         self,
         orders_to_create: List[Dict[str, Any]]
