@@ -162,8 +162,8 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 resp = await self._tx_client.cancel_order(
                     client_id=int(tracked_order.client_order_id),
                     clob_pair_id=self._margin_fractions[tracked_order.trading_pair]["clob_pair_id"],
-                    order_flags=CONSTANTS.ORDER_FLAGS_LONG_TERM,
-                    good_til_block_time=int(time.time()) + CONSTANTS.ORDER_EXPIRATION
+                    order_flags=CONSTANTS.ORDER_FLAGS_SHORT_TERM,
+                    good_til_block_time=0
                 )
                 if CONSTANTS.ACCOUNT_SEQUENCE_MISMATCH_ERROR in resp['raw_log']:
                     self.logger().warning(
@@ -661,6 +661,8 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 )
 
             if updated_order_data is None:
+                if tracked_order is None:
+                    return None
                 # If the order is not found in the response, return an OrderUpdate with the same status as before
                 return OrderUpdate(
                     client_order_id=tracked_order.client_order_id,
@@ -781,7 +783,15 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
         # account = await self._get_account()
         await self._process_open_positions(response["subaccount"]["openPerpetualPositions"])
 
+    async def _fetch_account_position_mode(self) -> Optional[PositionMode]:
+        """
+        dYdX v4 only supports ONEWAY position mode.
+        Returning it directly avoids repeated set attempts caused by the base class default None.
+        """
+        return PositionMode.ONEWAY
+
     async def _trading_pair_position_mode_set(self, mode: PositionMode, trading_pair: str) -> Tuple[bool, str]:
+
         """
         :return: A tuple of boolean (true if success) and error message if the exchange returns one on failure.
         """
@@ -797,6 +807,7 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 f"{mode} for {trading_pair}"
                 f" (dydx_v4 only supports the ONEWAY position mode)"
             )
+            return False, "dydx_v4 only supports the ONEWAY position mode."
         else:
             self._position_mode = PositionMode.ONEWAY
             super().set_position_mode(PositionMode.ONEWAY)
@@ -805,6 +816,7 @@ class DydxV4PerpetualDerivative(PerpetualDerivativePyBase):
                 PositionModeChangeEvent(self.current_timestamp, trading_pair, mode),
             )
             self.logger().debug(f"dydx_v4 switching position mode to " f"{mode} for {trading_pair} succeeded.")
+            return True, ""
 
     async def _set_trading_pair_leverage(self, trading_pair: str, leverage: int) -> Tuple[bool, str]:
         success = True

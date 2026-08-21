@@ -49,14 +49,12 @@ class DydxPerpetualV4Client:
         )
 
         host_and_port = CONSTANTS.DYDX_V4_AERIAL_CONFIG_URL
-        grpc_client = (
-            grpc.aio.secure_channel(host_and_port, credentials)
-            if credentials is not None else grpc.aio.insecure_channel(host_and_port)
-        )
-        query_grpc_client = (
-            grpc.aio.secure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL, credentials)
-            if credentials is not None else grpc.aio.insecure_channel(host_and_port)
-        )
+        if CONSTANTS.DYDX_V4_GRPC_INSECURE:
+            grpc_client = grpc.aio.insecure_channel(host_and_port)
+            query_grpc_client = grpc.aio.insecure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL)
+        else:
+            grpc_client = grpc.aio.secure_channel(host_and_port, credentials)
+            query_grpc_client = grpc.aio.secure_channel(CONSTANTS.DYDX_V4_QUERY_AERIAL_CONFIG_URL, credentials)
         self.stubBank = bank_query_grpc.QueryStub(grpc_client)
         self.auth_client = AuthGrpcClient(query_grpc_client)
         self.txs = TxGrpcClient(grpc_client)
@@ -150,8 +148,12 @@ class DydxPerpetualV4Client:
             client_id: int,
             clob_pair_id: int,
             order_flags: int,
-            good_til_block_time: int,
+            good_til_block_time: int = 0,
+            good_til_block: int = 0,
     ):
+        if order_flags == CONSTANTS.ORDER_FLAGS_SHORT_TERM and good_til_block == 0:
+            latest_block_result = await self.latest_block()
+            good_til_block = latest_block_result.block.header.height + 1 + 20
 
         subaccount_id = SubaccountId(owner=self._dydx_v4_chain_address, number=self._subaccount_num)
         order_id = OrderId(
@@ -160,10 +162,16 @@ class DydxPerpetualV4Client:
             order_flags=order_flags,
             clob_pair_id=int(clob_pair_id)
         )
-        msg = MsgCancelOrder(
-            order_id=order_id,
-            good_til_block_time=good_til_block_time
-        )
+        if good_til_block != 0:
+            msg = MsgCancelOrder(
+                order_id=order_id,
+                good_til_block=good_til_block
+            )
+        else:
+            msg = MsgCancelOrder(
+                order_id=order_id,
+                good_til_block_time=good_til_block_time
+            )
         result = await self.send_message(msg)
         return result
 
@@ -189,14 +197,13 @@ class DydxPerpetualV4Client:
         order_side = Order.SIDE_BUY if side == "BUY" else Order.SIDE_SELL
         quantums = self.calculate_quantums(size, atomic_resolution, step_base_quantums)
         subticks = self.calculate_subticks(price, atomic_resolution, quantum_conversion_exponent, subticks_per_tick)
-        order_flags = CONSTANTS.ORDER_FLAGS_SHORT_TERM if type == "MARKET" else CONSTANTS.ORDER_FLAGS_LONG_TERM
+        order_flags = CONSTANTS.ORDER_FLAGS_SHORT_TERM
+        latest_block_result = await self.latest_block()
+        good_til_block = latest_block_result.block.header.height + 1 + 20
 
         if type == "MARKET":
             time_in_force = CONSTANTS.TIME_IN_FORCE_IOC
-            latest_block_result = await self.latest_block()
-            good_til_block = latest_block_result.block.header.height + 1 + 10
         else:
-            good_til_block = 0
             if post_only:
                 time_in_force = CONSTANTS.TIME_IN_FORCE_POST_ONLY
             else:
