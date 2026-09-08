@@ -165,8 +165,10 @@ class OrderlyPerpetualAPIOrderBookDataSource(PerpetualAPIOrderBookDataSource):
 
         if market_response.get("success", False):
             market_data = market_response.get("data", {})
-            index_price = Decimal(str(market_data.get("index_price", 0)))
-            mark_price = Decimal(str(market_data.get("mark_price", 0)))
+            raw_index = market_data.get("index_price")
+            raw_mark = market_data.get("mark_price")
+            index_price = Decimal(str(raw_index)) if raw_index is not None and str(raw_index).strip() != "" else Decimal("0")
+            mark_price = Decimal(str(raw_mark)) if raw_mark is not None and str(raw_mark).strip() != "" else Decimal("0")
 
         funding_info = FundingInfo(
             trading_pair=trading_pair,
